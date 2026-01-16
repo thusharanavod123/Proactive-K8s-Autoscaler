@@ -1,0 +1,50 @@
+name: Proactive K8s Scaler Simulation
+on: 
+  push:
+    branches: [ main ]
+  workflow_dispatch: # This lets you run it manually for your supervisor!
+
+jobs:
+  proactive-scaling:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+
+      - name: Install ML Tools
+        run: |
+          pip install pandas numpy tensorflow scikit-learn
+
+      - name: Run Prediction Logic
+        run: |
+          python <<EOF
+          import pandas as pd
+          import numpy as np
+          from tensorflow.keras.models import load_model
+          
+          # 1. Load the Brain and the Data
+          model = load_model('models/proactive_model_google_v1.h5')
+          data = pd.read_csv('data/google_cluster_10k_minimal.csv')
+          
+          # 2. Get the last 6 points to predict the next 60 mins
+          last_6_points = data['cpu_usage'].tail(6).values.reshape(1, 6, 1)
+          
+          # 3. Predict
+          prediction = model.predict(last_6_points)
+          predicted_cpu = prediction[0][0]
+          
+          # 4. Proactive Scaling Decision
+          THRESHOLD = 0.5  # If predicted CPU > 50%
+          print(f"--- PROACTIVE SCALING REPORT ---")
+          print(f"Current Predicted CPU: {predicted_cpu:.4f}")
+          
+          if predicted_cpu > THRESHOLD:
+              print("🚨 RESULT: HIGH DEMAND DETECTED. Action: Scaling up Pods proactively!")
+          else:
+              print("✅ RESULT: NORMAL DEMAND. Action: No scaling needed.")
+          EOF
