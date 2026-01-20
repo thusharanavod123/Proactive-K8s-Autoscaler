@@ -1,7 +1,7 @@
 name: Proactive K8s Scaler Simulation
-on:
+on: 
   push:
-    branches: [main]
+    branches: [ main ]
   workflow_dispatch:
 
 jobs:
@@ -14,54 +14,48 @@ jobs:
       - name: Setup Python 3.9
         uses: actions/setup-python@v4
         with:
-          python-version: "3.9"
+          python-version: '3.9'
 
       - name: Install Machine Learning Dependencies
         run: |
           pip install pandas numpy tensorflow scikit-learn
 
-          - name: Run Proactive Prediction Logic
-          run: |
-            python <<EOF
-            import pandas as pd
-            import numpy as np
-            from tensorflow.keras.models import load_model
-            import os
+      - name: Debug - List Files in Repo
+        run: |
+          echo "Listing all files to check paths:"
+          ls -R
 
-            # 1. FIXED: Point to the REAL .h5 model file
-            model_path = 'models/proactive_model_google_v1.h5'
-            
-            # 2. FIXED: Point to the SYNTHETIC .csv data file
-            data_path = 'data/synthetic_stress_test.csv'
+      - name: Run Proactive Prediction Logic
+        run: |
+          python <<EOF
+          import pandas as pd
+          import numpy as np
+          from tensorflow.keras.models import load_model
+          import os
 
-            # Check if Model exists
-            if os.path.exists(model_path):
-                model = load_model(model_path, compile=False)
-                print(f"✅ Brain loaded from {model_path}")
-            else:
-                print(f"❌ Error: Model (.h5) missing at {model_path}")
-                exit(1)
+          # Define Paths
+          model_path = 'models/proactive_model_google_v1.h5'
+          data_path = 'data/synthetic_stress_test.csv'
 
-            # Check if Data exists
-            if os.path.exists(data_path):
-                data = pd.read_csv(data_path)
-                print(f"✅ Data loaded from {data_path}")
-            else:
-                print(f"❌ Error: Data (.csv) missing at {data_path}")
-                exit(1)
-
-            # 3. Use data to predict
-            last_6_points = data['cpu_usage'].tail(6).values.reshape(1, 6, 1)
-            prediction = model.predict(last_6_points)
-            print(f"Prediction: {prediction[0][0]}")
-            
-
-          # 4. Scaling Decision Report
-          THRESHOLD = 0.5 
-          print(f"\n--- SYNTHETIC STRESS TEST REPORT ---")
-          print(f"Predicted CPU Demand: {predicted_cpu:.4f}")
-          if predicted_cpu > THRESHOLD:
-              print("🚨 RESULT: SPIKE DETECTED. Action: Scaling up Pods!")
+          # Check Model
+          if os.path.exists(model_path):
+              model = load_model(model_path, compile=False)
+              print("✅ Brain (.h5) found and loaded.")
           else:
-              print("✅ RESULT: STABLE. Action: No scaling needed.")
+              print(f"❌ ERROR: Cannot find {model_path}")
+              exit(1)
+
+          # Check Data
+          if os.path.exists(data_path):
+              data = pd.read_csv(data_path)
+              print(f"✅ Data (.csv) found and loaded.")
+          else:
+              print(f"❌ ERROR: Cannot find {data_path}")
+              exit(1)
+
+          # Predict
+          last_6_points = data['cpu_usage'].tail(6).values.reshape(1, 6, 1)
+          prediction = model.predict(last_6_points)
+          print(f"--- RESULT ---")
+          print(f"Predicted CPU: {prediction[0][0]:.4f}")
           EOF
