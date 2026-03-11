@@ -19,6 +19,7 @@ jobs:
       - name: Install Machine Learning Dependencies
         run: |
           pip install pandas numpy tensorflow scikit-learn
+          pip install pandas==2.0.3 numpy==1.24.3 tensorflow==2.13.0 scikit-learn==1.3.0
 
       - name: Run Proactive Prediction Logic
         run: |
@@ -48,6 +49,11 @@ jobs:
           # Match these names to your CSV header exactly!
           features = data[['cpu_usage', 'memory_usage', 'timestamp']].tail(6).values
           
+          # Validation: Ensure we have enough data for the time window
+          if len(features) < 6:
+              print(f"❌ ERROR: Insufficient data. Expected 6 rows, got {len(features)}")
+              exit(1)
+
           # 5. Reshape to (1 Sample, 6 Time steps, 3 Features)
           prediction_input = features.reshape(1, 6, 3)
           
