@@ -1,0 +1,8 @@
+version: '3.8'
+services:
+  gopherpulse-app:
+    image: nginx:alpine # Your Go-based app placeholder
+    ports:
+      - "8080-8085:80" # Maps a range of ports to allow multiple replicas
+    deploy:
+      replicas: 1
